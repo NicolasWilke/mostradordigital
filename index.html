@@ -53,8 +53,6 @@ kbd{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);border:1px sol
 .search svg{flex:none;color:var(--muted)}
 .search input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:16px;padding:12px 0;outline:none}
 
-.go{flex:none;font-weight:600;font-size:14px;text-decoration:none;background:var(--green);color:#fff;border-radius:8px;padding:7px 12px;margin-right:-6px;white-space:nowrap}
-.go:hover{filter:brightness(1.08)}
 .reset{font:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer}
 .reset:hover{color:var(--ink);border-color:var(--green)}
 #fav{margin-bottom:8px}
@@ -135,15 +133,6 @@ footer{color:var(--muted);font-size:13.5px;padding-block:28px 40px}
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
           <input id="q" type="search" placeholder="Filtrar plataformas…" autocomplete="off">
         </div>
-      </div>
-      <div class="field" id="medField">
-        <div class="lbl"><label for="mat">Médico · SISA</label><span><kbd>Ctrl</kbd> <kbd>M</kbd></span></div>
-        <div class="search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18M3 12h18"/></svg>
-          <input id="mat" type="search" inputmode="numeric" placeholder="Matrícula MN / MP o apellido…" autocomplete="off" enterkeyhint="search">
-          <a class="go" id="matGo" href="https://sisa.msal.gov.ar/sisa/#sisa" target="_blank" rel="noopener">Buscar en SISA</a>
-        </div>
-        <p class="mhint" id="mhint">Copia lo que escribiste y abre la consulta de profesionales de SISA (REFEPS). Elegí «Médico» y pegalo con Ctrl+V.</p>
       </div>
     </div>
 
@@ -297,7 +286,6 @@ function track(e){const a=e.target.closest("a.tile[data-k]");if(!a||e.target.clo
 function render(){
   const v=VIEWS[view];
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
-  $("#medField").hidden=view!=="portal";
   renderFav();
   $("#sec").textContent=v.sec;$("#q").placeholder=v.ph;$("#qlbl").textContent=v.lbl;$("#sub").textContent=v.sub;$("#h1").innerHTML=v.h1;
   const q=norm($("#q").value.trim());
@@ -326,19 +314,9 @@ document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{vie
 $("#q").addEventListener("input",render);
 document.addEventListener("keydown",e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#q").focus()}
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="m"&&view==="portal"){e.preventDefault();$("#mat").focus()}
   if(e.key==="Escape"&&!$("#sheet").hidden)closeEditor();
 });
 
-const HINT=$("#mhint").textContent;
-function copyMat(){
-  const v=$("#mat").value.trim(); const h=$("#mhint");
-  if(!v){h.className="mhint";h.textContent=HINT;return}
-  const done=()=>{h.className="mhint ok";h.textContent=`Copiado “${v}”. En SISA elegí «Médico» y pegalo con Ctrl+V.`};
-  try{navigator.clipboard.writeText(v).then(done,()=>{$("#mat").select();h.className="mhint";h.textContent="Seleccioná el texto y copialo con Ctrl+C antes de pegarlo en SISA."})}catch(e){$("#mat").select()}
-}
-$("#matGo").addEventListener("click",copyMat);
-$("#mat").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();copyMat();$("#matGo").click()}});
 render();
 </script>
 
