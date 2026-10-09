@@ -98,11 +98,63 @@ footer{color:var(--muted);font-size:13.5px;padding-block:28px 40px}
 .btn.link{border:0;background:transparent;color:var(--muted);margin-right:auto;padding-inline:4px}
 @media (prefers-reduced-motion:no-preference){.tile{transition:border-color .15s,transform .15s}}
 @media (max-width:560px){.sec-head .rule{display:none}.sec-head{justify-content:space-between}.logo .txt{display:none}.tab{padding:8px 11px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}.tile{min-height:124px}}
+
+/* ---- Inicio de sesión ---- */
+.auth{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;padding:24px 16px;overflow-y:auto}
+.auth-card{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 24px;display:grid;gap:14px;box-shadow:0 10px 30px rgb(0 0 0 / .06)}
+.auth-brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:22px}
+.auth-brand .mark{width:38px;height:38px;border-radius:10px;background:var(--green);color:#fff;display:grid;place-items:center;font-family:var(--f-mono);font-size:14px;font-weight:500}
+.auth-brand b{color:var(--green)}
+.auth-card h2{font-family:var(--f-display);font-size:20px;margin:4px 0 0}
+.auth-card p.lead{margin:-6px 0 0;color:var(--muted);font-size:14.5px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px}
+.auth-tabs button{font:inherit;font-weight:600;font-size:14.5px;border:0;background:transparent;color:var(--muted);padding:8px;border-radius:8px;cursor:pointer}
+.auth-tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.auth label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.auth input{font:inherit;font-size:15.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+.auth input:focus{outline:2px solid var(--green);outline-offset:0;border-color:transparent}
+.auth .primary{font:inherit;font-weight:700;font-size:15.5px;background:var(--green);color:#fff;border:0;border-radius:10px;padding:12px;cursor:pointer}
+.auth .primary:disabled{opacity:.6;cursor:wait}
+.auth .google{font:inherit;font-weight:600;font-size:15px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.auth .sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
+.auth .sep::before,.auth .sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.auth .linkbtn{font:inherit;font-size:13.5px;color:var(--green);background:none;border:0;padding:0;cursor:pointer;justify-self:start;font-weight:600}
+.auth .amsg{margin:0;font-size:14px;min-height:1.2em;color:#B3261E}
+.auth .amsg.ok{color:var(--green)}
+.auth .legal{margin:0;font-size:12.5px;color:var(--muted);text-align:center}
+.userbox{display:flex;align-items:center;gap:8px;flex:none;margin-left:8px}
+.userbox .who{font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userbox button{font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+body.locked{overflow:hidden}
+@media (max-width:760px){.userbox .who{display:none}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 
 
+
+<div class="auth" id="auth">
+  <form class="auth-card" id="authForm" novalidate>
+    <div class="auth-brand"><span class="mark" aria-hidden="true">Rp/</span><span>Mostrador<b>Digital</b></span></div>
+    <h2 id="authTitle">Ingresá a tu cuenta</h2>
+    <p class="lead" id="authLead">Accedé a las plataformas de validación, droguerías y herramientas de tu farmacia.</p>
+    <div class="auth-tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-mode="login">Ingresar</button>
+      <button type="button" role="tab" aria-selected="false" data-mode="signup">Crear cuenta</button>
+    </div>
+    <label for="aName" id="aNameWrap" hidden>Nombre de la farmacia<input id="aName" autocomplete="organization" placeholder="Ej: Farmacia Central"></label>
+    <label for="aEmail">Correo electrónico<input id="aEmail" type="email" autocomplete="email" required placeholder="tu@correo.com"></label>
+    <label for="aPass" id="aPassWrap">Contraseña<input id="aPass" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo 6 caracteres"></label>
+    <button type="button" class="linkbtn" id="forgot">Olvidé mi contraseña</button>
+    <button type="submit" class="primary" id="aSubmit">Ingresar</button>
+    <div class="sep">o</div>
+    <button type="button" class="google" id="aGoogle"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuar con Google</button>
+    <p class="amsg" id="amsg" role="status"></p>
+    <p class="legal">Uso exclusivo para farmacias y personal autorizado.</p>
+  </form>
+</div>
 <nav class="top gut">
   <div class="wrap">
     <div class="logo"><span class="mark" aria-hidden="true">Rp/</span><span class="txt">Mostrador<b>Digital</b></span></div>
@@ -114,6 +166,7 @@ footer{color:var(--muted);font-size:13.5px;padding-block:28px 40px}
       <button class="tab" role="tab" aria-selected="false" data-v="obras">Obras sociales</button>
       <button class="tab" role="tab" aria-selected="false" data-v="enti">Entidades</button>
     </div>
+    <div class="userbox" id="userbox" hidden><span class="who" id="who"></span><button type="button" id="logout">Salir</button></div>
   </div>
 </nav>
 
@@ -320,5 +373,57 @@ document.addEventListener("keydown",e=>{
 render();
 </script>
 
+
+<script>
+/* ==== CONFIGURACIÓN DE FIREBASE ====
+   Pegá acá los datos de tu proyecto (Firebase > Configuración del proyecto > Tus apps > Web). */
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROYECTO",
+  appId: "TU_APP_ID"
+};
+(function(){
+  const $=s=>document.querySelector(s);
+  const auth$=$("#auth"), msg=$("#amsg");
+  let mode="login";
+  const say=(t,ok)=>{msg.textContent=t;msg.className="amsg"+(ok?" ok":"")};
+  document.body.classList.add("locked");
+  if(!window.firebase||firebaseConfig.apiKey.startsWith("TU_")){
+    say("Falta configurar Firebase en el archivo index.html (firebaseConfig).");
+    $("#aSubmit").disabled=true;$("#aGoogle").disabled=true;return;
+  }
+  firebase.initializeApp(firebaseConfig);
+  const auth=firebase.auth(); auth.languageCode="es";
+  const ERR={"auth/invalid-email":"El correo no es válido.","auth/user-not-found":"No hay una cuenta con ese correo.","auth/wrong-password":"La contraseña es incorrecta.","auth/invalid-credential":"Correo o contraseña incorrectos.","auth/email-already-in-use":"Ya existe una cuenta con ese correo. Probá ingresar.","auth/weak-password":"La contraseña debe tener al menos 6 caracteres.","auth/too-many-requests":"Demasiados intentos. Esperá unos minutos y volvé a probar.","auth/popup-closed-by-user":"Se cerró la ventana de Google antes de terminar.","auth/network-request-failed":"Sin conexión. Revisá internet y volvé a intentar."};
+  const err=e=>say(ERR[e.code]||"No se pudo completar. ("+(e.code||e.message)+")");
+  function setMode(m){mode=m;
+    document.querySelectorAll(".auth-tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.mode===m));
+    $("#aNameWrap").hidden=m!=="signup"; $("#forgot").hidden=m!=="login";
+    $("#authTitle").textContent=m==="login"?"Ingresá a tu cuenta":"Creá tu cuenta";
+    $("#aSubmit").textContent=m==="login"?"Ingresar":"Crear cuenta";
+    $("#aPass").autocomplete=m==="login"?"current-password":"new-password"; say("");}
+  document.querySelectorAll(".auth-tabs button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+  $("#authForm").addEventListener("submit",async e=>{e.preventDefault();
+    const email=$("#aEmail").value.trim(), pass=$("#aPass").value;
+    if(!email||!pass){say("Completá correo y contraseña.");return}
+    $("#aSubmit").disabled=true;
+    try{
+      if(mode==="login") await auth.signInWithEmailAndPassword(email,pass);
+      else{const c=await auth.createUserWithEmailAndPassword(email,pass);const n=$("#aName").value.trim();if(n)await c.user.updateProfile({displayName:n});}
+    }catch(x){err(x)}finally{$("#aSubmit").disabled=false}
+  });
+  $("#aGoogle").addEventListener("click",async()=>{try{await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}catch(x){err(x)}});
+  $("#forgot").addEventListener("click",async()=>{const email=$("#aEmail").value.trim();
+    if(!email){say("Escribí tu correo arriba y tocá de nuevo «Olvidé mi contraseña».");return}
+    try{await auth.sendPasswordResetEmail(email);say("Te mandamos un correo para cambiar la contraseña.",true)}catch(x){err(x)}});
+  $("#logout").addEventListener("click",()=>auth.signOut());
+  auth.onAuthStateChanged(u=>{
+    auth$.hidden=!!u; document.body.classList.toggle("locked",!u);
+    $("#userbox").hidden=!u; $("#who").textContent=u?(u.displayName||u.email):"";
+    if(!u){$("#aPass").value="";setMode("login")}
+  });
+})();
+</script>
 </body>
 </html>
