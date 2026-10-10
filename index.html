@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mostrador Digital</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Nunito:wght@800;900&display=swap">
 <style>
 [hidden]{display:none!important}
 img{max-width:100%}
@@ -123,10 +123,22 @@ footer{color:var(--muted);font-size:13.5px;padding-block:28px 40px}
 .auth .amsg.ok{color:var(--green)}
 .auth .legal{margin:0;font-size:12.5px;color:var(--muted);text-align:center}
 .userbox{display:flex;align-items:center;gap:8px;flex:none;margin-left:8px}
-.userbox .who{font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userbox .who{display:none;font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .userbox button{font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
 body.locked{overflow:hidden}
 @media (max-width:760px){.userbox .who{display:none}}
+
+/* Marca de la farmacia en la barra */
+.logo.branded{gap:10px}
+.logo.branded .mark{background:none;width:46px;height:46px;border-radius:0;padding:0}
+.logo.branded .mark img{width:100%;height:100%;object-fit:contain;display:block}
+.logo.branded .txt{display:flex;flex-direction:column;line-height:1.02;font-family:"Nunito","Familjen Grotesk",sans-serif;font-weight:900}
+.fb1{color:#1E9C93;font-size:19px;letter-spacing:.08em}
+.fb2{color:#C21A76;font-size:15px;letter-spacing:.2em}
+h1 .h-fb1,h1 .h-fb2{font-family:"Nunito","Familjen Grotesk",sans-serif;font-weight:900;letter-spacing:.04em}
+h1 .h-fb1{color:#1E9C93!important}
+h1 .h-fb2{color:#C21A76!important}
+@media (max-width:560px){.logo.branded .txt{display:none}}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -156,7 +168,7 @@ body.locked{overflow:hidden}
 </div>
 <nav class="top gut">
   <div class="wrap">
-    <div class="logo"><span class="mark" aria-hidden="true">Rp/</span><span class="txt">Mostrador<b>Digital</b></span></div>
+    <div class="logo"><span class="mark" id="farmMark" aria-hidden="true">Rp/</span><span class="txt" id="farmName">Mostrador<b>Digital</b></span></div>
     <div class="tabs" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" id="t-portal" aria-selected="true" data-v="portal">Portal</button>
       <button class="tab" role="tab" id="t-drog" aria-selected="false" data-v="drog">Droguerías</button>
@@ -398,6 +410,28 @@ const firebaseConfig = {
   const auth=firebase.auth(); auth.languageCode="es";
   const db=firebase.firestore();
   let signingUp=false;
+  const H1_DEFAULT=VIEWS.portal.h1;
+  const MARCAS={
+    vacchiano:{logo:"logo-vacchiano.png",nav:'<span class="fb1">FARMACIA</span><span class="fb2">VACCHIANO</span>',h1:'<span class="h-fb1">Farmacia</span> <span class="h-fb2">Vacchiano</span>'}
+  };
+  function ponerMarca(nombre,marca){
+    const n=(nombre||"").trim(), box=$(".logo");
+    const key=(marca||"").toLowerCase()||(/vacchiano/i.test(n)?"vacchiano":"");
+    const M=MARCAS[key];
+    box.classList.toggle("branded",!!M);
+    if(!n){$("#farmName").innerHTML="Mostrador<b>Digital</b>";$("#farmMark").textContent="Rp/";VIEWS.portal.h1=H1_DEFAULT;document.title="Mostrador Digital";render();return}
+    if(M){
+      $("#farmMark").innerHTML='<img src="'+M.logo+'" alt="">';
+      $("#farmName").innerHTML=M.nav;
+      VIEWS.portal.h1=M.h1;
+    }else{
+      $("#farmName").textContent=n;
+      const ini=n.replace(/^farmacia\s+/i,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join("")||n[0].toUpperCase();
+      $("#farmMark").textContent=ini;
+      const w=n.split(/\s+/); VIEWS.portal.h1=w.length>1?esc(w.slice(0,-1).join(" "))+' <span>'+esc(w[w.length-1])+'</span>':'<span>'+esc(n)+'</span>';
+    }
+    document.title=n+" · Mostrador Digital"; render();
+  }
   /* Perfil de la farmacia en Firestore: farmacias/{uid} = {nombre, email, plan, vence, creado} */
   async function cargarPerfil(u){
     const ref=db.collection("farmacias").doc(u.uid);
@@ -409,8 +443,8 @@ const firebaseConfig = {
       }
       const d=snap.data();
       window.MD_PERFIL=d; document.body.dataset.plan=d.plan||"gratis";
-      $("#who").textContent=d.nombre||u.displayName||u.email;
-    }catch(e){console.warn("No se pudo leer el perfil de la farmacia:",e);$("#who").textContent=u.displayName||u.email;}
+      $("#who").textContent=d.nombre||u.displayName||u.email;ponerMarca(d.nombre||u.displayName,d.marca);
+    }catch(e){console.warn("No se pudo leer el perfil de la farmacia:",e);$("#who").textContent=u.displayName||u.email;ponerMarca(u.displayName);}
   }
   const ERR={"auth/invalid-email":"El correo no es válido.","auth/user-not-found":"No hay una cuenta con ese correo.","auth/wrong-password":"La contraseña es incorrecta.","auth/invalid-credential":"Correo o contraseña incorrectos.","auth/email-already-in-use":"Ya existe una cuenta con ese correo. Probá ingresar.","auth/weak-password":"La contraseña debe tener al menos 6 caracteres.","auth/too-many-requests":"Demasiados intentos. Esperá unos minutos y volvé a probar.","auth/popup-closed-by-user":"Se cerró la ventana de Google antes de terminar.","auth/network-request-failed":"Sin conexión. Revisá internet y volvé a intentar."};
   const err=e=>say(ERR[e.code]||"No se pudo completar. ("+(e.code||e.message)+")");
@@ -439,7 +473,7 @@ const firebaseConfig = {
     auth$.hidden=!!u; document.body.classList.toggle("locked",!u);
     $("#userbox").hidden=!u; $("#who").textContent=u?(u.displayName||u.email):"";
     if(u&&!signingUp)cargarPerfil(u);
-    if(!u){$("#aPass").value="";setMode("login")}
+    if(!u){$("#aPass").value="";setMode("login");ponerMarca("");ponerMarca("");document.title="Mostrador Digital"}
   });
 })();
 </script>
