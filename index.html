@@ -130,6 +130,7 @@ body.locked{overflow:hidden}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -395,6 +396,22 @@ const firebaseConfig = {
   }
   firebase.initializeApp(firebaseConfig);
   const auth=firebase.auth(); auth.languageCode="es";
+  const db=firebase.firestore();
+  let signingUp=false;
+  /* Perfil de la farmacia en Firestore: farmacias/{uid} = {nombre, email, plan, vence, creado} */
+  async function cargarPerfil(u){
+    const ref=db.collection("farmacias").doc(u.uid);
+    try{
+      let snap=await ref.get();
+      if(!snap.exists){
+        await ref.set({nombre:u.displayName||u.email.split("@")[0],email:u.email,plan:"gratis",vence:null,creado:firebase.firestore.FieldValue.serverTimestamp()});
+        snap=await ref.get();
+      }
+      const d=snap.data();
+      window.MD_PERFIL=d; document.body.dataset.plan=d.plan||"gratis";
+      $("#who").textContent=d.nombre||u.displayName||u.email;
+    }catch(e){console.warn("No se pudo leer el perfil de la farmacia:",e);$("#who").textContent=u.displayName||u.email;}
+  }
   const ERR={"auth/invalid-email":"El correo no es válido.","auth/user-not-found":"No hay una cuenta con ese correo.","auth/wrong-password":"La contraseña es incorrecta.","auth/invalid-credential":"Correo o contraseña incorrectos.","auth/email-already-in-use":"Ya existe una cuenta con ese correo. Probá ingresar.","auth/weak-password":"La contraseña debe tener al menos 6 caracteres.","auth/too-many-requests":"Demasiados intentos. Esperá unos minutos y volvé a probar.","auth/popup-closed-by-user":"Se cerró la ventana de Google antes de terminar.","auth/network-request-failed":"Sin conexión. Revisá internet y volvé a intentar."};
   const err=e=>say(ERR[e.code]||"No se pudo completar. ("+(e.code||e.message)+")");
   function setMode(m){mode=m;
@@ -411,7 +428,7 @@ const firebaseConfig = {
     $("#aSubmit").disabled=true;
     try{
       if(mode==="login") await auth.signInWithEmailAndPassword(email,pass);
-      else{const c=await auth.createUserWithEmailAndPassword(email,pass);const n=$("#aName").value.trim();if(n){await c.user.updateProfile({displayName:n});$("#who").textContent=n;}}
+      else{signingUp=true;try{const c=await auth.createUserWithEmailAndPassword(email,pass);const n=$("#aName").value.trim();await c.user.updateProfile({displayName:n});await cargarPerfil(c.user);}finally{signingUp=false}}
     }catch(x){err(x)}finally{$("#aSubmit").disabled=false}
   });
   $("#forgot").addEventListener("click",async()=>{const email=$("#aEmail").value.trim();
@@ -421,6 +438,7 @@ const firebaseConfig = {
   auth.onAuthStateChanged(u=>{
     auth$.hidden=!!u; document.body.classList.toggle("locked",!u);
     $("#userbox").hidden=!u; $("#who").textContent=u?(u.displayName||u.email):"";
+    if(u&&!signingUp)cargarPerfil(u);
     if(!u){$("#aPass").value="";setMode("login")}
   });
 })();
